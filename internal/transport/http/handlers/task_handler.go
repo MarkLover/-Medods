@@ -31,13 +31,20 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
+		ScheduledAt: req.ScheduledAt,
+		Recurrence:  req.Recurrence,
 	})
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, newTaskDTO(created))
+	response := make([]taskDTO, 0, len(created))
+	for i := range created {
+		response = append(response, newTaskDTO(&created[i]))
+	}
+
+	writeJSON(w, http.StatusCreated, response)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +80,7 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Status:      req.Status,
+		ScheduledAt: req.ScheduledAt,
 	})
 	if err != nil {
 		writeUsecaseError(w, err)

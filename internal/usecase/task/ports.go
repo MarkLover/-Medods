@@ -2,12 +2,14 @@ package task
 
 import (
 	"context"
+	"time"
 
 	taskdomain "example.com/taskservice/internal/domain/task"
 )
 
 type Repository interface {
 	Create(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
+	CreateMany(ctx context.Context, tasks []taskdomain.Task) error
 	GetByID(ctx context.Context, id int64) (*taskdomain.Task, error)
 	Update(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
 	Delete(ctx context.Context, id int64) error
@@ -15,7 +17,7 @@ type Repository interface {
 }
 
 type Usecase interface {
-	Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error)
+	Create(ctx context.Context, input CreateInput) ([]taskdomain.Task, error)
 	GetByID(ctx context.Context, id int64) (*taskdomain.Task, error)
 	Update(ctx context.Context, id int64, input UpdateInput) (*taskdomain.Task, error)
 	Delete(ctx context.Context, id int64) error
@@ -26,10 +28,38 @@ type CreateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	ScheduledAt *time.Time
+	Recurrence  *RecurrenceInput
 }
 
 type UpdateInput struct {
 	Title       string
 	Description string
 	Status      taskdomain.Status
+	ScheduledAt *time.Time
+}
+
+type Parity string
+
+const (
+	ParityEven Parity = "even"
+	ParityOdd  Parity = "odd"
+)
+
+type RecurrenceType string
+
+const (
+	RecurrenceDaily         RecurrenceType = "daily"
+	RecurrenceMonthly       RecurrenceType = "monthly" // specific dates of the month (1-30)
+	RecurrenceSpecificDates RecurrenceType = "specific_dates"
+	RecurrenceEvenOdd       RecurrenceType = "even_odd_days"
+)
+
+type RecurrenceInput struct {
+	Type          RecurrenceType
+	Interval      int        // for daily
+	MonthDates    []int      // for monthly (1-30)
+	SpecificDates []string   // for specific_dates (ISO dates strings)
+	Parity        Parity     // for even_odd_days
+	EndDate       *time.Time // limit generation (optional)
 }

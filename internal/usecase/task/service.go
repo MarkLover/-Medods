@@ -21,27 +21,55 @@ func NewService(repo Repository) *Service {
 	}
 }
 
-func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error) {
+func (s *Service) Create(ctx context.Context, input CreateInput) ([]taskdomain.Task, error) {
 	normalized, err := validateCreateInput(input)
 	if err != nil {
 		return nil, err
 	}
 
-	model := &taskdomain.Task{
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Status:      normalized.Status,
-	}
 	now := s.now()
-	model.CreatedAt = now
-	model.UpdatedAt = now
+	
+	if input.Recurrence == nil {
+		model := &taskdomain.Task{
+			Title:       normalized.Title,
+			Description: normalized.Description,
+			Status:      normalized.Status,
+			ScheduledAt: input.ScheduledAt,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
 
-	created, err := s.repo.Create(ctx, model)
+		created, err := s.repo.Create(ctx, model)
+		if err != nil {
+			return nil, err
+		}
+		return []taskdomain.Task{*created}, nil
+	}
+
+	dates := GenerateRecurrenceDates(input.ScheduledAt, input.Recurrence)
+	if len(dates) == 0 {
+		return nil, fmt.Errorf("%w: invalid recurrence rules or no dates matched", ErrInvalidInput)
+	}
+
+	var tasks []taskdomain.Task
+	for _, d := range dates {
+		dCopy := d
+		tasks = append(tasks, taskdomain.Task{
+			Title:       normalized.Title,
+			Description: normalized.Description,
+			Status:      normalized.Status,
+			ScheduledAt: &dCopy,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		})
+	}
+
+	err = s.repo.CreateMany(ctx, tasks)
 	if err != nil {
 		return nil, err
 	}
 
-	return created, nil
+	return tasks, nil
 }
 
 func (s *Service) GetByID(ctx context.Context, id int64) (*taskdomain.Task, error) {
@@ -67,6 +95,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		Title:       normalized.Title,
 		Description: normalized.Description,
 		Status:      normalized.Status,
+		ScheduledAt: input.ScheduledAt,
 		UpdatedAt:   s.now(),
 	}
 

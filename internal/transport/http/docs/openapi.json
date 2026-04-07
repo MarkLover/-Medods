@@ -48,10 +48,13 @@
         },
         "responses": {
           "201": {
-            "description": "Created task",
+            "description": "Created tasks",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Task" }
+                "schema": { 
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Task" }
+                }
               }
             }
           },
@@ -169,6 +172,14 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-24T10:00:00Z"
+          },
+          "recurrence": {
+            "$ref": "#/components/schemas/Recurrence"
           }
         }
       },
@@ -188,6 +199,11 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-24T10:00:00Z"
           }
         }
       },
@@ -205,6 +221,11 @@
             "enum": ["new", "in_progress", "done"],
             "example": "new"
           },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-24T10:00:00Z"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -221,6 +242,17 @@
         "type": "object",
         "properties": {
           "error": { "type": "string", "example": "task not found" }
+        }
+      },
+      "Recurrence": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["daily", "monthly", "specific_dates", "even_odd_days"] },
+          "interval": { "type": "integer" },
+          "month_dates": { "type": "array", "items": { "type": "integer" } },
+          "specific_dates": { "type": "array", "items": { "type": "string", "format": "date-time" } },
+          "parity": { "type": "string", "enum": ["even", "odd"] },
+          "end_date": { "type": "string", "format": "date-time" }
         }
       }
     }
